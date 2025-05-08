@@ -1,0 +1,74 @@
+.data
+  prompt_a: .asciiz "Podaj wielomian 3 stopnia\nWspolczynnik a: "
+  prompt_b: .asciiz "Wspolczynnik b: "
+  prompt_c: .asciiz "Wspolczynnik c: "
+  prompt_d: .asciiz "Wspolczynnik d: "
+  prompt_x: .asciiz "Wspolczynnik x: "
+  print_result: .asciiz "Wartosc wielomianu to "
+
+.text
+.globl main
+
+main:
+  # Read coefficient a into $f1
+  la $a0, prompt_a
+  li $v0, 4
+  syscall
+  li $v0, 6
+  syscall
+  mov.s $f1, $f0
+
+  # Read coefficient b into $f2
+  la $a0, prompt_b
+  li $v0, 4
+  syscall
+  li $v0, 6
+  syscall
+  mov.s $f2, $f0
+
+  # Read coefficient c into $f3
+  la $a0, prompt_c
+  li $v0, 4
+  syscall
+  li $v0, 6
+  syscall
+  mov.s $f3, $f0
+
+  # Read coefficient d into $f4
+  la $a0, prompt_d
+  li $v0, 4
+  syscall
+  li $v0, 6
+  syscall
+  mov.s $f4, $f0
+
+  # Read x into $f5
+  la $a0, prompt_x
+  li $v0, 4
+  syscall
+  li $v0, 6
+  syscall
+  mov.s $f5, $f0
+
+  # Calculate polynomial
+  mul.s $f6, $f5, $f5   # x² in $f6
+  mul.s $f7, $f6, $f5    # x³ in $f7
+
+  mov.s $f12, $f4        # result = d
+  mul.s $f8, $f3, $f5    # cx
+  add.s $f12, $f12, $f8  # result += cx
+  mul.s $f8, $f2, $f6    # bx²
+  add.s $f12, $f12, $f8  # result += bx²
+  mul.s $f8, $f1, $f7    # ax³
+  add.s $f12, $f12, $f8  # result += ax³
+
+  # Print result
+  la $a0, print_result
+  li $v0, 4
+  syscall
+  li $v0, 2
+  syscall
+
+  # Exit
+  li $v0, 10
+  syscall
