@@ -1,0 +1,136 @@
+.data
+s1:         .asciiz "madam"
+s2:         .asciiz "madam"
+pal_true:   .asciiz "s1 is a palindrome\n"
+pal_false:  .asciiz "s1 is not a palindrome\n"
+rev_true:   .asciiz "s2 is the reverse of s1\n"
+rev_false:  .asciiz "s2 is not the reverse of s1\n"
+rev2_true:  .asciiz "reversed s2 is equal to s1\n"
+rev2_false: .asciiz "reversed s2 is not equal to s1\n"
+
+.text
+main:
+    addi $sp, $sp, -24
+    sw $ra, 0($sp)
+    sw $s0, 4($sp)
+    sw $s1, 8($sp)
+    sw $s2, 12($sp)
+    sw $s3, 16($sp)
+    sw $s4, 20($sp)
+    la $s0, s1
+    la $s1, s2
+    move $a0, $s0
+    jal strlen
+    move $s2, $v0
+    move $a0, $s1
+    jal strlen
+    move $s3, $v0
+    addi $t0, $s2, 4
+    andi $t0, $t0, 0xfffffffc
+    sub $sp, $sp, $t0
+    move $s4, $sp
+    move $a0, $s0
+    move $a1, $s4
+    move $a2, $s2
+    jal reverse_string
+    move $a0, $s0
+    move $a1, $s4
+    move $a2, $s2
+    jal strncmp
+    beqz $v0, palindrome_true
+    la $a0, pal_false
+    j print_pal_result
+palindrome_true:
+    la $a0, pal_true
+print_pal_result:
+    li $v0, 4
+    syscall
+    bne $s2, $s3, not_reverse
+    move $a0, $s1
+    move $a1, $s4
+    move $a2, $s2
+    jal strncmp
+    beqz $v0, reverse_true
+not_reverse:
+    la $a0, rev_false
+    j print_rev_result
+reverse_true:
+    la $a0, rev_true
+print_rev_result:
+    li $v0, 4
+    syscall
+    move $a0, $s1
+    move $a1, $s4
+    move $a2, $s3
+    jal reverse_string
+    move $a0, $s0
+    move $a1, $s4
+    move $a2, $s2
+    jal strncmp
+    beqz $v0, reverse2_true
+    la $a0, rev2_false
+    j print_rev2_result
+reverse2_true:
+    la $a0, rev2_true
+print_rev2_result:
+    li $v0, 4
+    syscall
+    addi $t0, $s2, 4
+    andi $t0, $t0, 0xfffffffc
+    add $sp, $sp, $t0
+    lw $ra, 0($sp)
+    lw $s0, 4($sp)
+    lw $s1, 8($sp)
+    lw $s2, 12($sp)
+    lw $s3, 16($sp)
+    lw $s4, 20($sp)
+    addi $sp, $sp, 24
+    li $v0, 10
+    syscall
+
+strlen:
+    li $v0, 0
+strlen_loop:
+    lb $t0, 0($a0)
+    beqz $t0, strlen_end
+    addi $v0, $v0, 1
+    addi $a0, $a0, 1
+    j strlen_loop
+strlen_end:
+    jr $ra
+
+reverse_string:
+    add $t0, $a0, $a2
+    addi $t0, $t0, -1
+    move $t1, $a1
+    li $t2, 0
+reverse_loop:
+    beq $t2, $a2, reverse_end
+    lb $t3, 0($t0)
+    sb $t3, 0($t1)
+    addi $t1, $t1, 1
+    addi $t0, $t0, -1
+    addi $t2, $t2, 1
+    j reverse_loop
+reverse_end:
+    sb $zero, 0($t1)
+    jr $ra
+
+strncmp:
+    li $v0, 0
+    beqz $a2, strncmp_equal
+    li $t0, 0
+strncmp_loop:
+    beq $t0, $a2, strncmp_end
+    lb $t1, 0($a0)
+    lb $t2, 0($a1)
+    bne $t1, $t2, strncmp_ne
+    addi $a0, $a0, 1
+    addi $a1, $a1, 1
+    addi $t0, $t0, 1
+    j strncmp_loop
+strncmp_ne:
+    li $v0, 1
+strncmp_end:
+strncmp_equal:
+    jr $ra
