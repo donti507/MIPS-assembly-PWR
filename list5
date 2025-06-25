@@ -1,0 +1,163 @@
+.data
+prompt1:        .asciiz "Enter number of non-zero elements in vector A: "
+prompt2:        .asciiz "Enter index and value for A (space-separated): "
+prompt3:        .asciiz "Enter number of non-zero elements in vector B: "
+prompt4:        .asciiz "Enter index and value for B (space-separated): "
+result_msg:     .asciiz "Dot product is: "
+
+# Maximum number of non-zero elements
+MAX:            .word 100
+
+# Arrays for vector A
+A_index:        .space 400     # 100 words
+A_value:        .space 400
+
+# Arrays for vector B
+B_index:        .space 400
+B_value:        .space 400
+
+.text
+.globl main
+
+main:
+    # -------- Input Vector A --------
+    li $v0, 4
+    la $a0, prompt1
+    syscall
+
+    li $v0, 5         # read int
+    syscall
+    move $t0, $v0     # $t0 = nA (number of non-zero elements in A)
+
+    li $t1, 0         # i = 0
+inputA_loop:
+    bge $t1, $t0, inputB_prompt
+
+    li $v0, 4
+    la $a0, prompt2
+    syscall
+
+    # Read index
+    li $v0, 5
+    syscall
+    move $t2, $v0     # index
+
+    # Read value
+    li $v0, 5
+    syscall
+    move $t3, $v0     # value
+
+    # Store index
+    la $t4, A_index
+    sll $t5, $t1, 2       # offset = i * 4
+    add $t4, $t4, $t5
+    sw $t2, 0($t4)
+
+    # Store value
+    la $t4, A_value
+    add $t4, $t4, $t5
+    sw $t3, 0($t4)
+
+    addi $t1, $t1, 1
+    j inputA_loop
+
+# -------- Input Vector B --------
+inputB_prompt:
+    li $v0, 4
+    la $a0, prompt3
+    syscall
+
+    li $v0, 5         # read int
+    syscall
+    move $t6, $v0     # $t6 = nB
+
+    li $t1, 0         # i = 0
+inputB_loop:
+    bge $t1, $t6, compute_dot
+
+    li $v0, 4
+    la $a0, prompt4
+    syscall
+
+    # Read index
+    li $v0, 5
+    syscall
+    move $t2, $v0     # index
+
+    # Read value
+    li $v0, 5
+    syscall
+    move $t3, $v0     # value
+
+    # Store index
+    la $t4, B_index
+    sll $t5, $t1, 2       # offset = i * 4
+    add $t4, $t4, $t5
+    sw $t2, 0($t4)
+
+    # Store value
+    la $t4, B_value
+    add $t4, $t5
+    sw $t3, 0($t4)
+
+    addi $t1, $t1, 1
+    j inputB_loop
+
+# -------- Compute Scalar Product --------
+compute_dot:
+    li $t7, 0       # i = 0 for A
+    li $s0, 0       # dot_product = 0
+
+outer_loop:
+    bge $t7, $t0, print_result
+
+    la $t1, A_index
+    sll $t2, $t7, 2
+    add $t1, $t1, $t2
+    lw $t3, 0($t1)      # index_A[i]
+
+    la $t1, A_value
+    add $t1, $t1, $t2
+    lw $t4, 0($t1)      # value_A[i]
+
+    # inner loop over B
+    li $t8, 0
+inner_loop:
+    bge $t8, $t6, outer_continue
+
+    la $t1, B_index
+    sll $t2, $t8, 2
+    add $t1, $t1, $t2
+    lw $t5, 0($t1)      # index_B[j]
+
+    beq $t3, $t5, match_found
+    addi $t8, $t8, 1
+    j inner_loop
+
+match_found:
+    la $t1, B_value
+    add $t1, $t1, $t2
+    lw $t6, 0($t1)      # value_B[j]
+
+    mul $t9, $t4, $t6   # temp = A_val * B_val
+    add $s0, $s0, $t9   # dot_product += temp
+
+    addi $t8, $t8, 1
+    j inner_loop
+
+outer_continue:
+    addi $t7, $t7, 1
+    j outer_loop
+
+# -------- Print Result --------
+print_result:
+    li $v0, 4
+    la $a0, result_msg
+    syscall
+
+    li $v0, 1
+    move $a0, $s0
+    syscall
+
+    li $v0, 10
+    syscall
